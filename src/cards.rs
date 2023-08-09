@@ -50,7 +50,7 @@ impl fmt::Display for Card {
             Card::AcornHarvest => "Acorn Harvest",
             Card::DreadReturn => "Dread Return",
             Card::DarkRitual => "Dark Ritual",
-            Card::SongsOfTheDamned => "Songs Of TheDamned",
+            Card::SongsOfTheDamned => "Songs Of The Damned",
             Card::ConjurersBauble => "Conjurers Bauble",
             Card::JackOLantern => "Jack-O'-Lantern",
             Card::Forest => "Forest",

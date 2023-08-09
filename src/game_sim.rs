@@ -63,9 +63,9 @@ fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
     if !going_first {draw(hand, deck);}
 
     loop {
-        log_hand(hand);
         game_state.turn_count += 1;
         log_turn(&game_state);
+        log_hand(hand);
 
         while hand.iter().any(|card| card == &Card::StreetWraith){
             remove_from_hand(&Card::StreetWraith, hand);
