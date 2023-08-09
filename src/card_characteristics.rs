@@ -19,6 +19,26 @@ pub fn becomes_land_free(card:&Card) -> bool {
     }
 }
 
+pub fn becomes_land(card:&Card) -> bool {
+    match card {
+        Card::Forest => true,
+        Card::HauntedMire => true,
+        Card::LandGrant => true,
+        Card::TrollOfKhazadDum => true,
+        Card::GenerousEnt => true,
+        _ => false
+    }
+}
+
+pub fn is_ritual(card:&Card) -> bool {
+    match card {
+        Card::DarkRitual => true,
+        Card::SongsOfTheDamned => true,
+        Card::TinderWall => true,
+        _ => false
+    }
+}
+
 pub fn add_mana_always(card:&Card, game_state:&GameState) -> ManaTypes{
     match card {
         Card::TinderWall => (0,0,0,1),

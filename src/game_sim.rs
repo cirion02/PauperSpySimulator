@@ -2,14 +2,14 @@ use crate::cards::{Card, Hand, remove_from_hand};
 use crate::library::{Deck, draw, remove_card_from_deck, remove_multiple_cards, starting_library, draw_land, draw_non_land};
 use crate::game_state::{starting_game_state, mana_total, GameState};
 use crate::calculations::{fatty_this_turn, spy_this_turn, mana_this_turn, basic_forest_in_deck_count, haunted_mire_in_deck_count, contains_initial_mana_sources};
-use crate::card_characteristics::{becomes_land_free, is_land};
+use crate::card_characteristics::{becomes_land_free, is_land, becomes_land, is_ritual};
 
 use std::cmp::min;
 
 //Turn to spy, turn to spy/fatty
 type SimResult = (i8, i8);
 
-const LOG_PLAYS:bool = true;
+const LOG_PLAYS:bool = false;
 
 fn log(text:&str){
     if !LOG_PLAYS {return}
@@ -36,23 +36,183 @@ pub fn sim_game_opening_hand(starting_hand:Hand, going_first:bool) -> SimResult{
 }
 
 pub fn sim_game_random_hand(going_first:bool) -> SimResult{
-    let mut starting_deck:Deck = Deck::new();
+    let mut starting_deck:Deck = starting_library();
     let mut starting_hand:Hand = Hand::new();
-    let mut hand_size:i8 = 7;
-    let mut done = false;
 
-    while !done {
-        starting_deck = starting_library();
-        starting_hand = Hand::new();
-        for _ in 0..hand_size {
-            draw(&mut starting_hand, &mut starting_deck);
-        };
-        log_hand(&starting_hand);
-        done = hand_size <= 4 || contains_initial_mana_sources(&starting_hand);
-        hand_size -= 1;
-        if !done {log("Took a milligan")};
-    }
+    for _ in 0..7 {
+        draw(&mut starting_hand, &mut starting_deck);
+    };
+
     sim_game(&mut starting_hand, &mut starting_deck, going_first)
+}
+
+pub fn sim_game_with_milligan(need_to_put_back:i8, going_first:bool) -> SimResult{
+    let mut starting_deck:Deck = starting_library();
+    let mut starting_hand:Hand = Hand::new();
+
+    for _ in 0..7 {
+        draw(&mut starting_hand, &mut starting_deck);
+    };
+
+    let mut put_back:i8 = 0;
+
+    while put_back < need_to_put_back {
+        log_hand(&starting_hand);
+        if starting_hand.contains(&Card::LotlethGiant){
+            remove_from_hand(&Card::LotlethGiant, &mut starting_hand);
+            starting_deck.insert(0, Card::LotlethGiant);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::AcornHarvest){
+            remove_from_hand(&Card::AcornHarvest, &mut starting_hand);
+            starting_deck.insert(0, Card::AcornHarvest);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::BalustradeSpy) && starting_hand.contains(&Card::DimirHouseGuard){
+            remove_from_hand(&Card::DimirHouseGuard, &mut starting_hand);
+            starting_deck.insert(0, Card::DimirHouseGuard);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.iter().filter(|card| card == &&Card::DimirHouseGuard).count() > 1{
+            remove_from_hand(&Card::DimirHouseGuard, &mut starting_hand);
+            starting_deck.insert(0, Card::DimirHouseGuard);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.iter().filter(|card| card == &&Card::BalustradeSpy).count() > 1{
+            remove_from_hand(&Card::BalustradeSpy, &mut starting_hand);
+            starting_deck.insert(0, Card::BalustradeSpy);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.iter().filter(|x| becomes_land(&x.to_owned())).count() > 4{
+            put_back_worst_land(&mut starting_hand, &mut starting_deck);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::DreadReturn){
+            remove_from_hand(&Card::DreadReturn, &mut starting_hand);
+            starting_deck.insert(0, Card::DreadReturn);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::Exhume){
+            remove_from_hand(&Card::Exhume, &mut starting_hand);
+            starting_deck.insert(0, Card::Exhume);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::JackOLantern){
+            remove_from_hand(&Card::JackOLantern, &mut starting_hand);
+            starting_deck.insert(0, Card::JackOLantern);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::ConjurersBauble){
+            remove_from_hand(&Card::ConjurersBauble, &mut starting_hand);
+            starting_deck.insert(0, Card::ConjurersBauble);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.iter().filter(|x| is_ritual(&x.to_owned())).count() > 1{
+            put_back_worst_ritual(&mut starting_hand, &mut starting_deck);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::StreetWraith){
+            remove_from_hand(&Card::StreetWraith, &mut starting_hand);
+            starting_deck.insert(0, Card::StreetWraith);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::TrollOfKhazadDum){
+            remove_from_hand(&Card::TrollOfKhazadDum, &mut starting_hand);
+            starting_deck.insert(0, Card::TrollOfKhazadDum);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::GenerousEnt){
+            remove_from_hand(&Card::GenerousEnt, &mut starting_hand);
+            starting_deck.insert(0, Card::GenerousEnt);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::LandGrant){
+            remove_from_hand(&Card::LandGrant, &mut starting_hand);
+            starting_deck.insert(0, Card::LandGrant);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.iter().filter(|x| is_land(&x.to_owned())).count() > 1{
+            put_back_worst_land(&mut starting_hand, &mut starting_deck);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::DimirHouseGuard){
+            remove_from_hand(&Card::DimirHouseGuard, &mut starting_hand);
+            starting_deck.insert(0, Card::DimirHouseGuard);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.contains(&Card::BalustradeSpy){
+            remove_from_hand(&Card::BalustradeSpy, &mut starting_hand);
+            starting_deck.insert(0, Card::BalustradeSpy);
+            put_back += 1;
+            continue;
+        }
+        if starting_hand.iter().filter(|x| is_ritual(&x.to_owned())).count() > 0{
+            put_back_worst_ritual(&mut starting_hand, &mut starting_deck);
+            put_back += 1;
+            continue;
+        }
+        put_back_worst_land(&mut starting_hand, &mut starting_deck);
+        put_back += 1;
+    }
+
+    log_hand(&starting_hand);
+
+    sim_game(&mut starting_hand, &mut starting_deck, going_first)
+}
+
+fn put_back_worst_land(hand:&mut Hand, deck:&mut Deck){
+    if hand.contains(&Card::TrollOfKhazadDum){
+        remove_from_hand(&Card::TrollOfKhazadDum, hand);
+        deck.insert(0, Card::TrollOfKhazadDum);
+    }
+    if hand.contains(&Card::GenerousEnt){
+        remove_from_hand(&Card::GenerousEnt, hand);
+        deck.insert(0, Card::GenerousEnt);
+    }
+    if hand.contains(&Card::LandGrant){
+        remove_from_hand(&Card::LandGrant, hand);
+        deck.insert(0, Card::LandGrant);
+    }
+    if hand.contains(&Card::HauntedMire){
+        remove_from_hand(&Card::HauntedMire, hand);
+        deck.insert(0, Card::HauntedMire);
+    }
+    if hand.contains(&Card::Forest){
+        remove_from_hand(&Card::Forest, hand);
+        deck.insert(0, Card::Forest);
+    }
+}
+
+fn put_back_worst_ritual(hand:&mut Hand, deck:&mut Deck){
+    if hand.contains(&Card::SongsOfTheDamned){
+        remove_from_hand(&Card::SongsOfTheDamned, hand);
+        deck.insert(0, Card::SongsOfTheDamned);
+    }
+    if hand.contains(&Card::TinderWall){
+        remove_from_hand(&Card::TinderWall, hand);
+        deck.insert(0, Card::TinderWall);
+    }
+    if hand.contains(&Card::DarkRitual){
+        remove_from_hand(&Card::DarkRitual, hand);
+        deck.insert(0, Card::DarkRitual);
+    }
 }
 
 fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
