@@ -55,12 +55,11 @@ pub fn spy_this_turn(hand:&Hand, game_state:&GameState) -> bool{
 }
 
 pub fn fatty_this_turn(hand:&Hand, game_state:&GameState) -> bool {
-    
+    if !game_state.fatty_in_yard {return false};
+
     let extra_mana: i8 = if can_make_black(hand, game_state) {0} else {
         if can_make_black_with_lantern(hand, game_state) {2} else {return false}
     };
-
-    if !game_state.fatty_in_yard {return false};
 
     if hand.iter().any(|card| card == &Card::Exhume) {
         let mana = mana_this_turn(hand, game_state);

@@ -46,7 +46,7 @@ pub fn sim_game_random_hand(going_first:bool) -> SimResult{
     sim_game(&mut starting_hand, &mut starting_deck, going_first)
 }
 
-pub fn sim_game_with_milligan(need_to_put_back:i8, going_first:bool) -> SimResult{
+pub fn create_mull_hand_deck(need_to_put_back:i8) -> (Hand, Deck){
     let mut starting_deck:Deck = starting_library();
     let mut starting_hand:Hand = Hand::new();
 
@@ -140,6 +140,12 @@ pub fn sim_game_with_milligan(need_to_put_back:i8, going_first:bool) -> SimResul
             put_back += 1;
             continue;
         }
+        if starting_hand.contains(&Card::AbundantHarvest){
+            remove_from_hand(&Card::AbundantHarvest, &mut starting_hand);
+            starting_deck.insert(0, Card::AbundantHarvest);
+            put_back += 1;
+            continue;
+        }
         if starting_hand.contains(&Card::LandGrant){
             remove_from_hand(&Card::LandGrant, &mut starting_hand);
             starting_deck.insert(0, Card::LandGrant);
@@ -174,6 +180,14 @@ pub fn sim_game_with_milligan(need_to_put_back:i8, going_first:bool) -> SimResul
 
     log_hand(&starting_hand);
 
+    (starting_hand, starting_deck)
+}
+
+pub fn sim_game_with_milligan(need_to_put_back:i8, going_first:bool) -> SimResult{
+    let (mut starting_hand, mut starting_deck) = create_mull_hand_deck(need_to_put_back);
+
+    log_hand(&starting_hand);
+
     sim_game(&mut starting_hand, &mut starting_deck, going_first)
 }
 
@@ -181,18 +195,22 @@ fn put_back_worst_land(hand:&mut Hand, deck:&mut Deck){
     if hand.contains(&Card::TrollOfKhazadDum){
         remove_from_hand(&Card::TrollOfKhazadDum, hand);
         deck.insert(0, Card::TrollOfKhazadDum);
+        return;
     }
     if hand.contains(&Card::GenerousEnt){
         remove_from_hand(&Card::GenerousEnt, hand);
         deck.insert(0, Card::GenerousEnt);
+        return;
     }
     if hand.contains(&Card::LandGrant){
         remove_from_hand(&Card::LandGrant, hand);
         deck.insert(0, Card::LandGrant);
+        return;
     }
     if hand.contains(&Card::HauntedMire){
         remove_from_hand(&Card::HauntedMire, hand);
         deck.insert(0, Card::HauntedMire);
+        return;
     }
     if hand.contains(&Card::Forest){
         remove_from_hand(&Card::Forest, hand);
@@ -204,10 +222,12 @@ fn put_back_worst_ritual(hand:&mut Hand, deck:&mut Deck){
     if hand.contains(&Card::SongsOfTheDamned){
         remove_from_hand(&Card::SongsOfTheDamned, hand);
         deck.insert(0, Card::SongsOfTheDamned);
+        return;
     }
     if hand.contains(&Card::TinderWall){
         remove_from_hand(&Card::TinderWall, hand);
         deck.insert(0, Card::TinderWall);
+        return;
     }
     if hand.contains(&Card::DarkRitual){
         remove_from_hand(&Card::DarkRitual, hand);
@@ -215,7 +235,7 @@ fn put_back_worst_ritual(hand:&mut Hand, deck:&mut Deck){
     }
 }
 
-fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
+pub fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
     let mut game_state = starting_game_state();
 
     let mut result:SimResult = (127,127);
@@ -230,6 +250,7 @@ fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
         while hand.iter().any(|card| card == &Card::StreetWraith){
             remove_from_hand(&Card::StreetWraith, hand);
             draw(hand, deck);
+            game_state.creatures_in_yard += 1;
             log("Cycle street wraith");
             log_hand(hand);
         }
@@ -255,7 +276,7 @@ fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
 
         let would_play_forest = !hand.contains(&Card::HauntedMire) && 
                                         hand.contains(&Card::Forest) && 
-                                            (wants_mana <= 1 ||
+                                            (wants_mana <= 0 ||
                                                 (static_mana == 0 || 
                                                     !(hand.contains(&Card::GenerousEnt) 
                                                         || hand.contains(&Card::TrollOfKhazadDum) 
@@ -266,7 +287,6 @@ fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
             static_mana += 1;
             game_state.g_mana += 1;
             made_land_drop = true;
-            wants_mana -= 1;
             remove_from_hand(&Card::Forest, hand);
         }
 
@@ -276,13 +296,11 @@ fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
         if !made_land_drop && mires_in_deck == 0 && forests_in_deck > 0 && hand.contains(&Card::LandGrant) && !hand.iter().any(is_land){
             log("Land Grant for forest and play it");
             remove_from_hand(&Card::LandGrant, hand);
-            hand.push(Card::Forest);
             remove_card_from_deck(&Card::Forest, deck);
             forests_in_deck -= 1;
             static_mana += 1;
             game_state.g_mana += 1;
             made_land_drop = true;
-            remove_from_hand(&Card::Forest, hand);
         }
 
         while static_mana > 0 {
