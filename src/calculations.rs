@@ -39,7 +39,9 @@ pub fn mana_this_turn(hand:&Hand, game_state:&GameState) -> ManaTypes {
 
 pub fn spy_this_turn(hand:&Hand, game_state:&GameState) -> bool{
     let extra_mana: i8 = if can_make_black(hand, game_state) {0} else {
-        if can_make_black_with_lantern(hand, game_state) {2} else {return false}
+        if game_state.lantern_in_play > 0 {1} else {
+            if can_make_black_with_lantern(hand, game_state) {2} else {return false}
+        }
     };
 
     if hand.iter().any(|card| card == &Card::BalustradeSpy) {
@@ -60,6 +62,44 @@ pub fn fatty_this_turn(hand:&Hand, game_state:&GameState) -> bool {
     let extra_mana: i8 = if can_make_black(hand, game_state) {0} else {
         if can_make_black_with_lantern(hand, game_state) {2} else {return false}
     };
+
+    if hand.iter().any(|card| card == &Card::Exhume) {
+        let mana = mana_this_turn(hand, game_state);
+        if black_mana(mana) >= 1 && mana_total(mana) >= 2 + extra_mana {return true}
+    }
+    else if hand.iter().any(|card| card == &Card::DreadReturn) {
+        let mana = mana_this_turn(hand, game_state);
+        if black_mana(mana) >= 2 && mana_total(mana) >= 4 + extra_mana {return true}
+    }
+
+    false
+}
+
+pub fn spy_this_turn_mid_turn(hand:&Hand, game_state:&GameState, mana_used:i8) -> bool{
+    let extra_mana: i8 = if can_make_black(hand, game_state) {0} else {
+        if game_state.lantern_in_play > 0 {1} else {
+            if can_make_black_with_lantern(hand, game_state) {2} else {return false}
+        }
+    } + mana_used;
+
+    if hand.iter().any(|card| card == &Card::BalustradeSpy) {
+        let mana = mana_this_turn(hand, game_state);
+        if black_mana(mana) >= 1 && mana_total(mana) >= 6 + extra_mana {return true}
+    }
+    else if hand.iter().any(|card| card == &Card::DimirHouseGuard) {
+        let mana = mana_this_turn(hand, game_state);
+        if black_mana(mana) >= 3 && mana_total(mana) >= 9 + extra_mana {return true}
+    }
+
+    false
+}
+
+pub fn fatty_this_turn_mid_turn(hand:&Hand, game_state:&GameState, mana_used:i8) -> bool {
+    if !game_state.fatty_in_yard {return false};
+
+    let extra_mana: i8 = if can_make_black(hand, game_state) {0} else {
+        if can_make_black_with_lantern(hand, game_state) {2} else {return false}
+    } + mana_used;
 
     if hand.iter().any(|card| card == &Card::Exhume) {
         let mana = mana_this_turn(hand, game_state);

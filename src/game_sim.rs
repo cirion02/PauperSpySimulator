@@ -1,7 +1,7 @@
 use crate::cards::{Card, Hand, remove_from_hand};
 use crate::library::{Deck, draw, remove_card_from_deck, remove_multiple_cards, starting_library, draw_land, draw_non_land};
 use crate::game_state::{starting_game_state, mana_total, GameState};
-use crate::calculations::{fatty_this_turn, spy_this_turn, mana_this_turn, basic_forest_in_deck_count, haunted_mire_in_deck_count, contains_initial_mana_sources};
+use crate::calculations::{fatty_this_turn, spy_this_turn, mana_this_turn, basic_forest_in_deck_count, haunted_mire_in_deck_count, contains_initial_mana_sources, spy_this_turn_mid_turn, fatty_this_turn_mid_turn};
 use crate::card_characteristics::{becomes_land_free, is_land, becomes_land, is_ritual};
 
 use std::cmp::min;
@@ -388,6 +388,26 @@ pub fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
                 remove_card_from_deck(&Card::BalustradeSpy, deck);
                 continue;
             }
+            if game_state.gb_mana > 1 && wants_mana <= -2 && hand.contains(&Card::DimirHouseGuard) && hand.contains(&Card::DarkRitual) && !hand.contains(&Card::BalustradeSpy) {
+                log("Dark ritual into Transmute dimir house guard");
+                static_mana -= 1;
+                remove_from_hand(&Card::DimirHouseGuard, hand);
+                remove_from_hand(&Card::DarkRitual, hand);
+                game_state.creatures_in_yard += 1;
+                hand.push(Card::BalustradeSpy);
+                remove_card_from_deck(&Card::BalustradeSpy, deck);
+                continue;
+            }
+            if game_state.gb_mana > 1 && wants_mana <= -game_state.creatures_in_yard+1 && hand.contains(&Card::DimirHouseGuard) && hand.contains(&Card::SongsOfTheDamned) && !hand.contains(&Card::BalustradeSpy) {
+                log("Songs of the Damned into Transmute dimir house guard");
+                static_mana -= 1;
+                remove_from_hand(&Card::DimirHouseGuard, hand);
+                remove_from_hand(&Card::SongsOfTheDamned, hand);
+                game_state.creatures_in_yard += 1;
+                hand.push(Card::BalustradeSpy);
+                remove_card_from_deck(&Card::BalustradeSpy, deck);
+                continue;
+            }
             if game_state.lantern_in_play > 0 {
                 log("Crack Jack-o-lantern");
                 static_mana -= 1;
@@ -396,6 +416,19 @@ pub fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
                 draw(hand, deck);
                 forests_in_deck = basic_forest_in_deck_count(hand, &game_state);
                 mires_in_deck = haunted_mire_in_deck_count(hand, &game_state);
+                if static_mana > 0 {
+                    if spy_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Win with spy");
+                        result.0 = game_state.turn_count;
+                        result.1 = min(game_state.turn_count, result.1);
+                        return result;
+                    }
+            
+                    if fatty_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Reanimate a fatty");
+                        result.1 = min(game_state.turn_count, result.1);
+                    }
+                }
                 log_hand(hand);
                 continue;
             }
@@ -406,6 +439,19 @@ pub fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
                 draw(hand, deck);
                 forests_in_deck = basic_forest_in_deck_count(hand, &game_state);
                 mires_in_deck = haunted_mire_in_deck_count(hand, &game_state);
+                if static_mana > 0 {
+                    if spy_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Win with spy");
+                        result.0 = game_state.turn_count;
+                        result.1 = min(game_state.turn_count, result.1);
+                        return result;
+                    }
+            
+                    if fatty_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Reanimate a fatty");
+                        result.1 = min(game_state.turn_count, result.1);
+                    }
+                }
                 log_hand(hand);
                 continue;
             }
@@ -417,6 +463,19 @@ pub fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
                 draw(hand, deck);
                 forests_in_deck = basic_forest_in_deck_count(hand, &game_state);
                 mires_in_deck = haunted_mire_in_deck_count(hand, &game_state);
+                if static_mana > 0 {
+                    if spy_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Win with spy");
+                        result.0 = game_state.turn_count;
+                        result.1 = min(game_state.turn_count, result.1);
+                        return result;
+                    }
+            
+                    if fatty_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Reanimate a fatty");
+                        result.1 = min(game_state.turn_count, result.1);
+                    }
+                }
                 log_hand(hand);
                 continue;
             }
@@ -425,6 +484,19 @@ pub fn sim_game(hand:&mut Hand, deck:&mut Deck, going_first:bool) -> SimResult{
                 static_mana -= 1;
                 remove_from_hand(&Card::AbundantHarvest, hand);
                 draw_non_land(hand, deck);
+                if static_mana > 0 {
+                    if spy_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Win with spy");
+                        result.0 = game_state.turn_count;
+                        result.1 = min(game_state.turn_count, result.1);
+                        return result;
+                    }
+            
+                    if fatty_this_turn_mid_turn(&hand, &game_state, game_state.gb_mana + game_state.g_mana - static_mana) {
+                        log("Reanimate a fatty");
+                        result.1 = min(game_state.turn_count, result.1);
+                    }
+                }
                 log_hand(hand);
                 continue;
             }

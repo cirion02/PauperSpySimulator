@@ -1,0 +1,78 @@
+*action*
+value := definition
+[condition] 
+
+
+*cycle all street wraiths*
+
+- Try to win
+
+want_mana := 6 - [lands_in_play] - [lands_in_hand] - [land_grants_in_hand] - [mana_you_can_make_with_rituals]
+
+spendable_mana := [lands_in_play]
+
+
+if all of the following are true
+   - [forest_in_hand] 
+   - [no_mire_in_hand] 
+   - any of the following are true
+       - spendable_mana == 0 
+       - want_mana <= 0
+       - [can't_tutor_for_mire]
+then *play a forest*; spendable_mana += 1
+
+
+
+if all of the following are true
+   - haven't played a forest yet
+   - [no_mires_in_deck]
+   - [forest_in_deck]
+   - [no_lands_in_hand]
+   - [land_grant_in_hand]
+then *lands grant for forest and play it*
+
+
+while spendable_mana > 0, do the highest of the following, start at the top after every action
+   - if want_mana > 0
+       - if [mire_in_deck] and [troll_in_hand]
+         then *cycle troll for mire*; spendable_mana -= 1; want_mana -= 1;
+       - if [mire_in_deck] and [ent_in_hand]
+         then *cycle ent for mire*; spendable_mana -= 1; want_mana -= 1;
+       - if [forest_in_deck] and [ent_in_hand]
+         then
+              - *cycle ent for forest*
+              - spendable_mana -= 1; want_mana -= 1;
+              - if [haven't played a forest yet] and [no_mire_in_hand]
+                    - *play a forest*; spendable_mana += 1
+       - if [lands_in_deck] and [harvest_in_hand]
+         then
+              - *harvest for a land*
+              - spendable_mana -= 1; want_mana -= 1;
+              - if [haven't played a forest yet] and [no_mire_in_hand]
+                    - *play a forest*; spendable_mana += 1
+       - if [tinder_wall_in_hand]
+         then *play tinder wall*; spendable_mana -= 1; want_mana -= 1;
+   - if all of the following are true
+       - [house_guard_in_hand]
+       - [no_spy_in_hand]
+       - [spendable_mana >= 3]   (This does check for color since if you have 3 lands in play 2 are black by nececity)
+     then *transmute hourse guard*; spendable_mana -= 3
+   - if [jack_o_lantern_in_play]
+     then *crack it*; spendable_mana -= 1
+   - if [bauble_in_hand]
+     then *play and crack it*; spendable_mana -= 1
+   - if [jack_o_lantern_in_hand] and spendable_mana >= 2
+     then *play and crack it*; spendable_mana -= 2
+   - if [harvest_in_hand]
+     then *harvest for non_land*; spendable_mana -= 1
+   - if [jack_o_lantern_in_hand]
+     then *play it*; spendable_mana -= 1
+
+
+if [haunted_mire_in_hand] and [haven't played a forest yet]
+them *play haunted mire*
+
+if [land_grant_in_hand] and [haven't played a land yet]
+them *land grant for haunted mire and play it*
+
+end turn
