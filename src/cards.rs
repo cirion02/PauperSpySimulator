@@ -18,8 +18,8 @@ pub enum Card {
     SongsOfTheDamned,
     ConjurersBauble,
     JackOLantern,
+    HauntedMire,
     Forest,
-    HauntedMire
 }
 
 

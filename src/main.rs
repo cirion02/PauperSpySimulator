@@ -4,17 +4,29 @@ mod calculations;
 mod card_characteristics;
 mod game_sim;
 mod library;
+mod hand_encoding;
 
 
 use std::time::Instant;
 
 use std::env;
 
+use std::fs::File;
+use std::io::{Write, BufRead, BufReader};
+
 fn main() {
 
     env::set_var("RUST_BACKTRACE", "1");
 
-    test();
+    sim_hands("hand_files/one_card_hands.txt", "results/one_card_hands.txt");
+    sim_hands("hand_files/two_card_hands.txt", "results/two_card_hands.txt");
+    sim_hands("hand_files/three_card_hands.txt", "results/three_card_hands.txt");
+    sim_hands("hand_files/four_card_hands.txt", "results/four_card_hands.txt");
+    sim_hands("hand_files/five_card_hands.txt", "results/five_card_hands.txt");
+    sim_hands("hand_files/six_card_hands.txt", "results/six_card_hands.txt");
+    sim_hands("hand_files/seven_card_hands.txt", "results/seven_card_hands.txt");
+
+    //test();
 }
 
 fn test() {
@@ -113,4 +125,37 @@ fn test_hand() {
     println!("Elapsed time: {:?}", elapsed_time);
 
     println!("Mulling: {:?}", results);
+}
+
+fn sim_hands(file_path:&str, result_path:&str){
+    let start_time = Instant::now();
+
+    let sim_count_per_hand = 1000;
+
+    let file = File::open(file_path).unwrap();
+    let reader = BufReader::new(file);
+
+    let mut output_file = File::create(result_path).unwrap();
+
+    let mut result: Vec<String> = Vec::new();
+
+    for line_result in reader.lines() {
+        let line = line_result.unwrap();
+        let num = line.split_once(',').unwrap().0;
+        let starting_hand = hand_encoding::encoded_to_hand(num.parse::<u64>().unwrap());
+
+        let sim = || game_sim::sim_game_opening_hand(starting_hand.to_owned(),  true);
+
+        let sum_results = (0..sim_count_per_hand).map(|_| sim()).fold((0,0), |(a1,a2), (b1,b2)| (a1+b1 as i32,a2+b2 as i32));
+
+        let results = (sum_results.0 as f32 / sim_count_per_hand as f32, sum_results.1 as f32 / sim_count_per_hand as f32);
+
+
+        result.push(format!("{},{},{}", num, results.0, results.1));
+    }
+
+    write!(output_file, "{}", result.join("\n")).unwrap();
+
+    let elapsed_time = start_time.elapsed();
+    println!("Elapsed time: {:?}", elapsed_time);
 }
